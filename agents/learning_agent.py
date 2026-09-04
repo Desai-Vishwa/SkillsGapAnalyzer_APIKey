@@ -117,6 +117,7 @@ def create_learning_plan(
     student_profile: dict,
     skill_analysis: str,
     career_recommendations: str,
+    api_key: str | None = None,
 ) -> str:
     """
     Run the Learning Agent.
@@ -129,6 +130,8 @@ def create_learning_plan(
         Output from the Skill Analyzer agent.
     career_recommendations : str
         Output from the Career Agent.
+    api_key : str | None
+        Gemini API key. Falls back to the GEMINI_API_KEY env var if not provided.
 
     Returns
     -------
@@ -142,4 +145,4 @@ def create_learning_plan(
         skill_analysis=skill_analysis,
         career_recommendations=career_recommendations,
     )
-    return call_llm(prompt)
+    return call_llm(prompt, api_key=api_key)

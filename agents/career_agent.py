@@ -71,7 +71,11 @@ Format your response EXACTLY as follows (use these headings):
 """
 
 
-def recommend_careers(student_profile: dict, skill_analysis: str) -> str:
+def recommend_careers(
+    student_profile: dict,
+    skill_analysis: str,
+    api_key: str | None = None,
+) -> str:
     """
     Run the Career Agent.
 
@@ -81,6 +85,8 @@ def recommend_careers(student_profile: dict, skill_analysis: str) -> str:
         Same dict passed to the Skill Analyzer.
     skill_analysis : str
         Output from the Skill Analyzer agent.
+    api_key : str | None
+        Gemini API key. Falls back to the GEMINI_API_KEY env var if not provided.
 
     Returns
     -------
@@ -97,4 +103,4 @@ def recommend_careers(student_profile: dict, skill_analysis: str) -> str:
         target_role=student_profile.get("target_role", "N/A"),
         skill_analysis=skill_analysis,
     )
-    return call_llm(prompt)
+    return call_llm(prompt, api_key=api_key)

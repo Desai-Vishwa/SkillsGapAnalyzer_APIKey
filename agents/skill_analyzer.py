@@ -57,7 +57,7 @@ Format your response EXACTLY as follows (use these headings):
 """
 
 
-def analyze_skills(student_profile: dict) -> str:
+def analyze_skills(student_profile: dict, api_key: str | None = None) -> str:
     """
     Run the Skill Analyzer agent.
 
@@ -66,6 +66,8 @@ def analyze_skills(student_profile: dict) -> str:
     student_profile : dict
         Keys: degree, year, technical_skills, soft_skills,
               interests, projects, target_role
+    api_key : str | None
+        Gemini API key. Falls back to the GEMINI_API_KEY env var if not provided.
 
     Returns
     -------
@@ -81,4 +83,4 @@ def analyze_skills(student_profile: dict) -> str:
         projects=student_profile.get("projects", "N/A"),
         target_role=student_profile.get("target_role", "N/A"),
     )
-    return call_llm(prompt)
+    return call_llm(prompt, api_key=api_key)

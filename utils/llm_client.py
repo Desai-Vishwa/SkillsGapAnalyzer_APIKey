@@ -2,7 +2,7 @@
 llm_client.py
 -------------
 Centralised Gemini API client used by all agents.
-Reads the API key from the .env file (never hard-coded).
+API key is supplied at call time (from the UI) or falls back to the .env file.
 """
 
 import os
@@ -15,24 +15,30 @@ _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=_ENV_PATH)
 
 
-def get_llm_client():
+def get_llm_client(api_key: str | None = None):
     """
     Initialise and return a configured Gemini GenerativeModel instance.
-    Raises a clear error if the API key is missing.
+
+    Parameters
+    ----------
+    api_key : str | None
+        API key supplied directly (e.g. from the UI).
+        Falls back to the GEMINI_API_KEY environment variable if not provided.
+
+    Raises a clear error if no key is available from either source.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    key = api_key or os.getenv("GEMINI_API_KEY")
+    if not key:
         raise EnvironmentError(
-            "GEMINI_API_KEY not found. "
-            "Please create a .env file with your key (see .env.example)."
+            "Gemini API key not provided. "
+            "Enter your key in the sidebar or create a .env file (see .env.example)."
         )
-    genai.configure(api_key=api_key)
-    # gemini-2.5-flash is the latest available flash model (also known as gemini-3.6-flash)
+    genai.configure(api_key=key)
     model = genai.GenerativeModel(model_name="gemini-2.5-flash")
     return model
 
 
-def call_llm(prompt: str) -> str:
+def call_llm(prompt: str, api_key: str | None = None) -> str:
     """
     Send a prompt to the Gemini model and return the response text.
 
@@ -40,6 +46,9 @@ def call_llm(prompt: str) -> str:
     ----------
     prompt : str
         The complete prompt string to send to the model.
+    api_key : str | None
+        API key supplied directly (e.g. from the UI).
+        Falls back to the GEMINI_API_KEY environment variable if not provided.
 
     Returns
     -------
@@ -47,7 +56,7 @@ def call_llm(prompt: str) -> str:
         The model's text response, or an error message string.
     """
     try:
-        model = get_llm_client()
+        model = get_llm_client(api_key=api_key)
         response = model.generate_content(prompt)
         # Extract plain text from the response
         return response.text.strip()

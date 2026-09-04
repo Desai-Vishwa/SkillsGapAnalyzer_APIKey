@@ -42,25 +42,77 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+        /* ── Sidebar – light green background ── */
+        [data-testid="stSidebar"] {
+            background-color: #e8f5e9 !important;
+        }
+        [data-testid="stSidebar"] * {
+            color: #1b5e20 !important;
+        }
+        [data-testid="stSidebar"] a {
+            color: #2e7d32 !important;
+            font-weight: 600;
+        }
+        /* Keep input text readable */
+        [data-testid="stSidebar"] input {
+            color: #1a1a1a !important;
+            background-color: #ffffff !important;
+        }
+
+        /* ── Main content area – light blue background ── */
+        [data-testid="stAppViewContainer"] > .main {
+            background-color: #e3f2fd !important;
+        }
+        .block-container {
+            background-color: #e3f2fd !important;
+        }
+
+        /* ── Header ── */
         .main-header {
             text-align: center;
             padding: 1rem 0 0.5rem 0;
         }
+
+        /* ── Agent badge ── */
         .agent-badge {
             display: inline-block;
             background: #1e3a5f;
-            color: #ffffff;
+            color: #ffffff !important;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.82rem;
             font-weight: 600;
             margin-bottom: 0.4rem;
         }
+
+        /* ── API key step box ── */
+        .api-steps {
+            background: #f1f8e9;
+            border-left: 4px solid #43a047;
+            border-radius: 6px;
+            padding: 0.7rem 0.9rem;
+            font-size: 0.84rem;
+            line-height: 1.7;
+            margin-top: 0.5rem;
+        }
+        .api-steps ol {
+            margin: 0;
+            padding-left: 1.2rem;
+        }
+        .api-steps a {
+            color: #2e7d32 !important;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        /* ── Divider ── */
         .section-divider {
             border: none;
             border-top: 2px solid #e5e7eb;
             margin: 1.5rem 0;
         }
+
+        /* ── Submit button ── */
         .stButton > button {
             width: 100%;
             background-color: #1e3a5f;
@@ -97,13 +149,50 @@ st.markdown(
 st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Sidebar – how it works
+# Sidebar – API key + how it works
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.image(
         "https://img.icons8.com/fluency/96/rocket.png",
         width=64,
     )
+
+    st.subheader("🔑 Gemini API Key")
+
+    # Step-by-step instructions
+    st.markdown(
+        """
+        <div class="api-steps">
+          <strong>How to get your free API key:</strong>
+          <ol>
+            <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></li>
+            <li>Sign in with your Google account</li>
+            <li>Click <strong>"Create API Key"</strong></li>
+            <li>Copy the key (starts with <code>AIza…</code>)</li>
+            <li>Paste it in the box below and press <strong>Enter ↵</strong></li>
+          </ol>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    api_key_input = st.text_input(
+        "Paste your Gemini API key here",
+        type="password",
+        placeholder="AIzaSy… (paste and press Enter)",
+        help="Your key is used only for this session and is never saved or stored anywhere.",
+    )
+
+    if api_key_input:
+        st.success("✅ API key received! You're ready to generate your roadmap.")
+    else:
+        st.warning(
+            "⚠️ No API key entered yet.  \n"
+            "Paste your key above and press **Enter** to continue.",
+            icon="🔑",
+        )
+
+    st.markdown("---")
     st.title("How It Works")
     st.markdown(
         """
@@ -203,6 +292,12 @@ def validate_inputs(degree, technical_skills, target_role):
 # Agent pipeline – runs only after form submission
 # ---------------------------------------------------------------------------
 if submitted:
+    # Check API key first
+    gemini_api_key = api_key_input.strip() if api_key_input else None
+    if not gemini_api_key and not __import__("os").getenv("GEMINI_API_KEY"):
+        st.error("❌ Please enter your Gemini API key in the sidebar before generating the roadmap.")
+        st.stop()
+
     is_valid, error_msg = validate_inputs(degree, technical_skills, target_role)
 
     if not is_valid:
@@ -227,7 +322,7 @@ if submitted:
         # -------------------------------------------------------------------
         with st.status("🔍 Agent 1: Skill Analyzer is working…", expanded=True) as status1:
             st.write("Analysing your skills vs. industry requirements for **{}**…".format(target_role))
-            skill_analysis = analyze_skills(student_profile)
+            skill_analysis = analyze_skills(student_profile, api_key=gemini_api_key)
 
             if skill_analysis.startswith("⚠️"):
                 st.error(skill_analysis)
@@ -240,7 +335,7 @@ if submitted:
         # -------------------------------------------------------------------
         with st.status("🎯 Agent 2: Career Agent is working…", expanded=True) as status2:
             st.write("Generating career path recommendations…")
-            career_recommendations = recommend_careers(student_profile, skill_analysis)
+            career_recommendations = recommend_careers(student_profile, skill_analysis, api_key=gemini_api_key)
 
             if career_recommendations.startswith("⚠️"):
                 st.error(career_recommendations)
@@ -254,7 +349,7 @@ if submitted:
         with st.status("📚 Agent 3: Learning Agent is working…", expanded=True) as status3:
             st.write("Building your personalised learning roadmap…")
             learning_plan = create_learning_plan(
-                student_profile, skill_analysis, career_recommendations
+                student_profile, skill_analysis, career_recommendations, api_key=gemini_api_key
             )
 
             if learning_plan.startswith("⚠️"):
